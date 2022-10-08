@@ -64,6 +64,58 @@ type AllBuiltinTypes struct {
 	UintptrType    uintptr
 }
 
+func TestZeroNested(t *testing.T) {
+	type SubStruct struct {
+		IntPtr *int
+	}
+	type StrucWithSubStruct struct {
+		Sub         *SubStruct
+		ShouldBeNil *bool
+	}
+	s := StrucWithSubStruct{}
+	err := ZeroNested(&s, "Sub.IntPtr")
+	assert.NoError(t, err)
+	assert.NotNil(t, s.Sub.IntPtr)
+	assert.Zero(t, *s.Sub.IntPtr)
+	assert.Nil(t, s.ShouldBeNil)
+}
+
+func TestDefaultNested(t *testing.T) {
+	type InnerStruct struct {
+		Int int
+	}
+	type SubStruct struct {
+		StructPtr *InnerStruct
+	}
+	type StrucWithSubStruct struct {
+		Sub         *SubStruct
+		ShouldBeNil *bool
+	}
+	s := StrucWithSubStruct{}
+	err := SetNested(&s, ".Sub.StructPtr", &InnerStruct{Int: 1})
+	assert.NoError(t, err)
+	assert.NotNil(t, s.Sub.StructPtr)
+	assert.Equal(t, 1, s.Sub.StructPtr.Int)
+	assert.Nil(t, s.ShouldBeNil)
+}
+
+func TestSlice(t *testing.T) {
+	type StrucWithSlice struct {
+		Slice []int
+	}
+
+	s := StrucWithSlice{}
+	err := Zero(&s)
+	assert.NoError(t, err)
+	assert.NotNil(t, s.Slice)
+
+	s = StrucWithSlice{}
+	err = SetNested(&s, ".Slice", []int{1})
+	assert.NoError(t, err)
+	assert.Len(t, s.Slice, 1)
+	assert.Equal(t, 1, s.Slice[0])
+}
+
 // TestZeroWithAllBuiltinTypesStruct uses AllBuiltinTypes to test that all of the pointer struct fields
 // in AllBuiltinTypes initialize to the same value as all of the non-pointers
 // when the `Zero` function is called.
@@ -195,15 +247,15 @@ func TestZeroWithErrorCover(t *testing.T) {
 }
 
 func TestMustZero(t *testing.T) {
-    var a int
-    defer func(){
-        if r := recover(); r !=nil {
-            t.Log("success panic")
-        } else{
-            t.Errorf("Trying to MustZero() with a non-struct type should panic")
-        }
-    }()
-    MustZero(&a)
+	var a int
+	defer func() {
+		if r := recover(); r != nil {
+			t.Log("success panic")
+		} else {
+			t.Errorf("Trying to MustZero() with a non-struct type should panic")
+		}
+	}()
+	MustZero(&a)
 }
 
 //
