@@ -2,7 +2,7 @@
 
 Allocate provides functions for allocating golang structs so that pointer fields are pointers to zero'd values instead of `nil`.
 
-Also provides two evil functions `ZeroNested`/`SetNested` for only allocating or setting default value for nested field.
+Also provides two evil functions `ZeroNested`/`SetNested` for only allocating or setting value for nested field.
 
 ## Brief Example
 
@@ -11,35 +11,35 @@ package main
 
 import (
     "fmt"
+
     "github.com/Thearas/allocate"
 )
 
-type TopLevelStruct struct {
-    MyEmbeddedStruct *EmbeddedStruct
+type TopLevel struct {
+    Inner *Embedded
 }
 
-type EmbeddedStruct struct {
-    SomeString string
+type Embedded struct {
+    Inner *Leaf
+}
+
+type Leaf struct {
     SomeInt int
 }
 
 func main() {
-    topStruct := new(TopLevelStruct)
-    fmt.Printf("before using allocate.Zero: %v\n", topStruct)
+    top := new(TopLevel)
+    fmt.Printf("befor: %v\n", top)
 
-    allocate.Zero(&topStruct)
-    fmt.Printf("post allocate.Zero: %v\n", topStruct)
-    fmt.Printf("topStruct.MyEmbeddedStruct.SomeInt==%d\n", topStruct.MyEmbeddedStruct.SomeInt)
-    // Note that panics would occur by executing `*topStruct.MyEmbeddedStruct` or
-    //`topStruct.MyEmbeddedStruct.SomeInt`
+    allocate.MustSetNested(&top, ".Inner.Inner", &Leaf{SomeInt: 1})
+    fmt.Printf("after: top.Inner.Inner.SomeInt == %d\n", top.Inner.Inner.SomeInt)
 }
 ```
 
 ```bash
 # OUTPUT
-before using allocate.Zero: &{<nil>}
-post allocate.Zero: &{0x8201d2400}
-topStruct.MyEmbeddedStruct.SomeInt == 0
+before: &{<nil>}
+after: top.Inner.Inner.SomeInt == 1
 ```
 
 ### Use Cases
